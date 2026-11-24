@@ -25,6 +25,7 @@ gcc syrup.c -o syrup
 
 # What's broken
 * Here be dragons :DDDDDD
+* Though everything that should work, seems to work!
 
 # TODO
 * [ ] Implement dependency management and resolution, the earlier the better
