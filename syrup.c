@@ -11,15 +11,13 @@
 // No generative AI was used in the making of this program.
 // Without further ado:
 
-// This is the function for handling installing.
+// Struct for package info
 struct Package {
 	char name[size];
 	char desc[size];
 	char version[size];
 	char architecture[size];
 	char website[size];
-	char install[size];
-	char remove[size];
 };
 
 struct Package pkg;
@@ -46,8 +44,6 @@ int preparePackage(char *pkgname) {
 	char line3[size];
 	char line4[size];
 	char line5[size];
-	char line6[size];
-	char line7[size];
 	
 	// Opening the file
 	char openRightFile[size];
@@ -64,8 +60,6 @@ int preparePackage(char *pkgname) {
 	fgets(line3, sizeof(line3), pkgfile);
 	fgets(line4, sizeof(line4), pkgfile);
 	fgets(line5, sizeof(line5), pkgfile);
-	fgets(line6, sizeof(line6), pkgfile);
-	fgets(line7, sizeof(line7), pkgfile);
 	fclose(pkgfile);
 	
 	// Defining delimiter and making new variables to separate (strsep uses pointer to a pointer)
@@ -75,8 +69,6 @@ int preparePackage(char *pkgname) {
 	char *line3sep = line3;
 	char *line4sep = line4;
 	char *line5sep = line5;
-	char *line6sep = line6;
-	char *line7sep = line7;
 
 	// Variables for separated strings
 	char *line1token;
@@ -84,8 +76,6 @@ int preparePackage(char *pkgname) {
 	char *line3token;
 	char *line4token;
 	char *line5token;
-	char *line6token;
-	char *line7token;
 
 	// These while loops separate the string, leaving lineXtoken with the part after the "=" (the delimiter)
 	while (line1sep != NULL) {
@@ -107,14 +97,6 @@ int preparePackage(char *pkgname) {
 	while (line5sep != NULL) {
 		line5token = strsep(&line5sep, delimiter);
 	}
-
-	while (line6sep != NULL) {
-		line6token = strsep(&line6sep, delimiter);
-	};
-
-	while (line7sep != NULL) {
-		line7token = strsep(&line7sep, delimiter);
-	};
 	
 	// Filling out struct for organization.
 	strcpy(pkg.name, line1token);
@@ -122,23 +104,43 @@ int preparePackage(char *pkgname) {
 	strcpy(pkg.version, line3token);
 	strcpy(pkg.architecture, line4token);
 	strcpy(pkg.website, line5token);
-	strcpy(pkg.install, line6token);
-	strcpy(pkg.remove, line7token);
 
+};
+
+// Unprepares the package. It deletes the resulting folder after decompressing.
+void unpreparePackage(char *pkgname) {
+	char unpreparePackageLine[size];
+	snprintf(unpreparePackageLine, sizeof(unpreparePackageLine), "rm -rf ./%s", pkgname);
+	system(unpreparePackageLine);
 };
 
 // This installs the package using the file defined in the pkg info in install=. Installing works by having the package info point to a shell script, and the location of that shell script gets passed to system, which then runs it and installs the package.
 void installPkg(char *installPackageName) {
 	char packageInstallLine[size];
-	snprintf(packageInstallLine, sizeof(packageInstallLine), "./%s/%s", installPackageName, pkg.install);
+	snprintf(packageInstallLine, sizeof(packageInstallLine), "./%s/install", installPackageName);
 	system(packageInstallLine);
 };
 
 // This removes the package, works similarly to installing a package.
 void removePkg(char *removePackageName) {
 	char packageRemoveLine[size];
-	snprintf(packageRemoveLine, sizeof(packageRemoveLine), "./%s/%s", removePackageName, pkg.remove);
-	system(packageRemoveLine);
+	snprintf(packageRemoveLine, sizeof(packageRemoveLine), "./%s/remove", removePackageName);
+	remove(packageRemoveLine);
+};
+
+// This prints the package information.
+void printPkgInfo(void) {
+		printf("Package information:\n");
+		printf("Name: %s", pkg.name);
+		printf("Description: %s", pkg.desc);
+		printf("Version: %s", pkg.version);
+		printf("Target architecture: %s", pkg.architecture);
+		printf("Website: %s", pkg.website);
+
+};
+
+void printUsage(void) {
+	printf("Usage: { install | remove | info | usage/help }\n");
 };
 
 // Main function, argc is how many arguments the program took, and argv is an array containing the values of those arguments.
@@ -146,7 +148,7 @@ int main(int argc, char *argv[]) {
 	
 	// Makes it so there need to be at least 2 additional arguments to syrup (example: "syrup install firefox" is valid, "syrup install" isn't.)
 	if (argc < 3) {
-		printf("Usage: {install|remove|info}");
+		printUsage();
 		return 0;
 	};
 	
@@ -166,24 +168,25 @@ int main(int argc, char *argv[]) {
 		};
 
 		// Giving package info before installing
-		printf("Package information:\n");
-		printf("Name: %s\n", pkg.name);
-		printf("Description: %s\n", pkg.desc);
-		printf("Version: %s\n", pkg.version);
-		printf("Target architecture: %s\n", pkg.architecture);
-		printf("Website: %s\n", pkg.website);
+		printPkgInfo();
 
 		// Asking! Consent is important :D
-		char installAnswer[size] = "n";
-		printf("Are you sure you want to install this package? [y/N] ");
+		char installAnswer[size];
+		printf("Are you sure you want to install this package? [y/n] ");
 		scanf("%s", &installAnswer);
-		if (strcmp(installAnswer, "n") == 0) {
+		if (strcmp(installAnswer, "n") == 0 || strcmp(installAnswer, "N") == 0 || strcmp(installAnswer, "no") == 0 | strcmp(installAnswer, "No") == 0 || strcmp(installAnswer, "NO") == 0) {
+			// Not installing
 			printf("Cancelled package installation.\n");
 			return 0;
+		} else if (strcmp(installAnswer, "y") == 0 || strcmp(installAnswer, "Y") == 0 || strcmp(installAnswer, "yes") == 0 || strcmp(installAnswer, "Yes") == 0 || strcmp(installAnswer, "YES") == 0) {
+			// Installing if input is y
+			installPkg(packag);
+			unpreparePackage(packag);
+		} else {
+			// Anything other than y and n
+			printf("Invalid answer.\n");
+			return 0;
 		};
-
-		// Finally, installing.
-		installPkg(packag);
 	
 	// Trying to match remove
 	} else if (strcmp(action, "remove") == 0) {
@@ -193,39 +196,38 @@ int main(int argc, char *argv[]) {
 		};
 		
 		// Giving package info before removing, in case you find something interesting.
-		printf("Package information:\n");
-		printf("Name: %s\n", pkg.name);
-		printf("Description: %s\n", pkg.desc);
-		printf("Version: %s\n", pkg.version);
-		printf("Target architecture: %s\n", pkg.architecture);
-		printf("Website: %s\n", pkg.website);
+		printPkgInfo();
 
 		// Once again, consent is always important :-)
 		char removeAnswer[size] = "n";
-		printf("Are you sure you want to remove this package? [y/N] ");
+		printf("Are you sure you want to remove this package? [y/n] ");
 		scanf("%s", &removeAnswer);
-		if (strcmp(removeAnswer, "n") == 0) {
-			printf("Cancelled package removal.\n");
+		if (strcmp(removeAnswer, "n") == 0 || strcmp(removeAnswer, "N") == 0 || strcmp(removeAnswer, "no") == 0 | strcmp(removeAnswer, "No") == 0 || strcmp(removeAnswer, "NO") == 0) {
+			// Not installing
+			printf("Cancelled package installation.\n");
+			return 0;
+		} else if (strcmp(removeAnswer, "y") == 0 || strcmp(removeAnswer, "Y") == 0 || strcmp(removeAnswer, "yes") == 0 || strcmp(removeAnswer, "Yes") == 0 || strcmp(removeAnswer, "YES") == 0) {
+			// Removing if input is y
+			removePkg(packag);
+			unpreparePackage(packag);
+		} else {
+			// Anything other than y and n
+			printf("Invalid answer.\n");
 			return 0;
 		};
-
-		// Actually removing the package
-		removePkg(packag);
 
 	// Trrying to match info
 	} else if (strcmp(action, "info") == 0) {
 		if (preparePackage(packag) == 0) {
 			return 0;
 		};
-		printf("Name: %s\n", pkg.name);
-		printf("Description: %s\n", pkg.desc);
-		printf("Version: %s\n", pkg.version);
-		printf("Target architecture: %s\n", pkg.architecture);
-		printf("Website: %s\n", pkg.website);
+		printPkgInfo();
 
 	// Couldn't match to anything.
+	} else if (strcmp(action, "help") == 0 || strcmp(action, "usage") == 0) {
+		printUsage();
 	} else {
-		printf("Invalid argument. Valid arguments are: {install|remove}");
+		printUsage();
 	};
 
 };
